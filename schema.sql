@@ -1,0 +1,18 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE IF NOT EXISTS owners(id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS fridges(id INTEGER PRIMARY KEY, name TEXT NOT NULL, owner_id INTEGER NOT NULL REFERENCES owners(id));
+CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, unit TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS stock(id INTEGER PRIMARY KEY, fridge_id INTEGER NOT NULL REFERENCES fridges(id), product_id INTEGER NOT NULL REFERENCES products(id), quantity REAL NOT NULL CHECK(quantity>=0), unit TEXT NOT NULL, expires TEXT);
+CREATE TABLE IF NOT EXISTS equipment(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS fridge_equipment(fridge_id INTEGER NOT NULL REFERENCES fridges(id), equipment_id INTEGER NOT NULL REFERENCES equipment(id), PRIMARY KEY(fridge_id,equipment_id));
+CREATE TABLE IF NOT EXISTS recipes(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, servings INTEGER NOT NULL CHECK(servings>0));
+CREATE TABLE IF NOT EXISTS recipe_events(recipe_id INTEGER NOT NULL REFERENCES recipes(id), event TEXT NOT NULL, PRIMARY KEY(recipe_id,event));
+CREATE TABLE IF NOT EXISTS ingredients(recipe_id INTEGER NOT NULL REFERENCES recipes(id), product_id INTEGER NOT NULL REFERENCES products(id), quantity REAL NOT NULL CHECK(quantity>0), unit TEXT NOT NULL, PRIMARY KEY(recipe_id,product_id));
+CREATE TABLE IF NOT EXISTS recipe_equipment(recipe_id INTEGER NOT NULL REFERENCES recipes(id), equipment_id INTEGER NOT NULL REFERENCES equipment(id), PRIMARY KEY(recipe_id,equipment_id));
+CREATE TABLE IF NOT EXISTS steps(id INTEGER PRIMARY KEY, recipe_id INTEGER NOT NULL REFERENCES recipes(id), position INTEGER NOT NULL, text TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS sources(id INTEGER PRIMARY KEY, name TEXT NOT NULL, text TEXT NOT NULL, recipe_name TEXT NOT NULL, created TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS extractions(id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL REFERENCES sources(id), pipeline TEXT NOT NULL, model TEXT NOT NULL, created TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS facts(id INTEGER PRIMARY KEY, extraction_id INTEGER NOT NULL REFERENCES extractions(id), kind TEXT NOT NULL, value TEXT NOT NULL, fragment TEXT NOT NULL, confidence REAL, status TEXT NOT NULL DEFAULT 'предварительное' CHECK(status IN ('предварительное','подтверждено','отклонено')));
+CREATE TABLE IF NOT EXISTS conflicts(id INTEGER PRIMARY KEY, fact_id INTEGER NOT NULL REFERENCES facts(id), other_fact_id INTEGER REFERENCES facts(id), explanation TEXT NOT NULL, resolution TEXT NOT NULL DEFAULT 'требует проверки');
+CREATE TABLE IF NOT EXISTS shopping_lists(id INTEGER PRIMARY KEY, created TEXT DEFAULT CURRENT_TIMESTAMP, event TEXT NOT NULL, servings INTEGER NOT NULL, fridge_ids TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shopping_items(list_id INTEGER NOT NULL REFERENCES shopping_lists(id), product TEXT NOT NULL, quantity REAL NOT NULL, unit TEXT NOT NULL);
